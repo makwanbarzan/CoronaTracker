@@ -2,7 +2,7 @@
 
 CoronaTracker is a free, open-sourced, online app for tracking COVID-19 outbreak cases based on countries. All data of this app has provided by [interactive-static.scmp.com](https://interactive-static.scmp.com) and will be updated daily.
 
-Apple won't approve any coronavirus-themed apps created by individual developers, so I open-sourced this app and you can install to your physical phone and use it.
+Apple won't approve any coronavirus-themed app created by individual developers, so I open-sourced this app and you can install on your physical phone and use it.
 
 <img src="Documentation/1.png" align="center" width="40%"></img>
 <img src="Documentation/2.png" align="center" width="40%"></img>
