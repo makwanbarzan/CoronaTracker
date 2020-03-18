@@ -90,8 +90,8 @@ class ViewController: UITableViewController, UISearchBarDelegate {
                 
             } else {
                 DispatchQueue.main.async {
-                    let ac = UIAlertController(title: "Error while loading data", message: "We couldn't get the data due to internet connection interrupt. Please check your connection and tab the Restart button.", preferredStyle: .alert)
-                    ac.addAction(UIAlertAction(title: "Restart", style: .default, handler: { (action) in
+                    let ac = UIAlertController(title: "Error while loading data", message: "We couldn't get the data due to internet connection interrupt. Please check your connection and tab the Refresh button.", preferredStyle: .alert)
+                    ac.addAction(UIAlertAction(title: "Refresh", style: .default, handler: { (action) in
                         self.fetchData()
                         
                     }))
@@ -295,7 +295,12 @@ class ViewController: UITableViewController, UISearchBarDelegate {
     }
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 120
+       return UITableView.automaticDimension
+    }
+    
+    override func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
+
+        return UITableView.automaticDimension
     }
     
     //About button on navigation:
