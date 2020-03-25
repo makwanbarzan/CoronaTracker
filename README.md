@@ -1,6 +1,6 @@
 # CoronaTracker
 
-CoronaTracker is a free, open-sourced, online app for tracking COVID-19 outbreak cases based on countries. All data of this app has provided by [interactive-static.scmp.com](https://interactive-static.scmp.com) and will be updated daily.
+CoronaTracker is a free, open-sourced, online app for tracking COVID-19 outbreak cases based on countries. All data of this app has provided by [Microsoft's Bing](https://bing.com/covid) and will be updated daily.
 
 Apple won't approve any coronavirus-themed app created by individual developers, so I open-sourced this app and you can install on your physical phone and use it.
 
