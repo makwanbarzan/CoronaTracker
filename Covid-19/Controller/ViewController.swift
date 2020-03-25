@@ -8,13 +8,13 @@
 
 import UIKit
 
-class ViewController: UITableViewController, UISearchBarDelegate {
+class ViewController: UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
     @IBOutlet weak var updateLabel: UILabel!
     
+    var worldwide : World?
     var details = [Country]()
     var searchFilter = [Country]()
     var date : String?
-    
     
     var isSearching = false
     
@@ -35,7 +35,7 @@ class ViewController: UITableViewController, UISearchBarDelegate {
         super.viewDidLoad()
         
         tableView.isHidden = true
-        
+
         fetchData()
         
         //Navigation bar buttons:
@@ -54,6 +54,7 @@ class ViewController: UITableViewController, UISearchBarDelegate {
         //Add search bar to navigation bar:
         let searchController = UISearchController(searchResultsController: nil)
         searchController.searchBar.delegate = self
+        searchController.searchBar.searchTextField.delegate = self
         searchController.searchBar.searchTextField.clearButtonMode = .whileEditing
         navigationItem.searchController = searchController
     
@@ -62,36 +63,39 @@ class ViewController: UITableViewController, UISearchBarDelegate {
     //Fetch the data from internet:
     func fetchData() {
         
-        let url = URL(string:"https://interactive-static.scmp.com/sheet/wuhan/viruscases.json")!
-        var request = URLRequest(url: url)
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpMethod = "POST"
+        let url = URL(string:"https://bing.com/covid/data")!
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             
             if let data = data {
                 
-                if let response = try? JSONDecoder().decode(Sheet.self, from: data) {
+                if let response = try? JSONDecoder().decode(World.self, from: data) {
                     DispatchQueue.main.async {
-                        self.details = response.entries
-                        self.searchFilter = response.entries
-                                            
-                        self.date = response.last_updated
                         
+                        self.worldwide = response
+                        self.details = response.areas
+                        self.searchFilter = response.areas
+
+                        self.date = response.lastUpdated
+
                         self.isSearching = false
-                        
+
                         self.tableView.reloadData()
                         self.tableView.isHidden = false
+                        
 
                     }
+                } else {
+                    print(error?.localizedDescription)
                 }
             
                 self.details = []
+
                 
             } else {
                 DispatchQueue.main.async {
-                    let ac = UIAlertController(title: "Error while loading data", message: "We couldn't get the data due to internet connection interrupt. Please check your connection and tab the Refresh button.", preferredStyle: .alert)
-                    ac.addAction(UIAlertAction(title: "Refresh", style: .default, handler: { (action) in
+                    let ac = UIAlertController(title: "Error while loading data", message: "We couldn't get the data due to internet connection interrupt. Please check your connection and tab the Restart button.", preferredStyle: .alert)
+                    ac.addAction(UIAlertAction(title: "Restart", style: .default, handler: { (action) in
                         self.fetchData()
                         
                     }))
@@ -103,89 +107,87 @@ class ViewController: UITableViewController, UISearchBarDelegate {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
+
         //This is the first cell on the table view (apologize for identifier name):
         guard let cell1 = tableView.dequeueReusableCell(withIdentifier: "SecondCell") as? SecondTableViewCell else {fatalError("second cell error")}
-        
+
         //This is the second cell on the table view (apologize for identifier name):
         guard let cell2 = tableView.dequeueReusableCell(withIdentifier: "Cell") as? HomeTableViewCell else {fatalError("first cell error")}
-        
+
         //Put the search results in the second cell:
         if isSearching {
-            
-            cell2.countryLabel.text = searchFilter[indexPath.row].details.country
-            cell2.caseNums.text = searchFilter[indexPath.row].cases
-            cell2.deathNums.text = searchFilter[indexPath.row].deaths
-            cell2.recoveryNums.text = searchFilter[indexPath.row].recovered
-            cell2.countryImage.image = UIImage(named: searchFilter[indexPath.row].country)
-            
+
+            cell2.countryLabel.text = searchFilter[indexPath.row].detail.name
+            cell2.caseNums.text = "\(searchFilter[indexPath.row].detail.cases)"
+            cell2.deathNums.text = "\(searchFilter[indexPath.row].detail.deaths)"
+            cell2.recoveryNums.text = "\(searchFilter[indexPath.row].detail.recovers)"
+            cell2.countryImage.image = UIImage(named: searchFilter[indexPath.row].detail.name)
+
             cell1.isHidden = true
-            
+
         } else {
             if indexPath.section == 0 {
-                let totalCases = details.map({$0.details.cases}).reduce(0, +)
-                let totalDeaths = details.map({$0.details.deaths}).reduce(0, +)
-                let totalRecovered = details.map({$0.details.recovered}).reduce(0, +)
-                
+
                 cell1.countryLabel.text = "Overall"
-                cell1.caseNums.text = "\(totalCases)"
-                cell1.deathNums.text = "\(totalDeaths)"
-                cell1.recoveryNums.text = "\(totalRecovered)"
+                cell1.caseNums.text = "\(worldwide?.totalConfirmed ?? 0)"
+                cell1.deathNums.text = "\(worldwide?.totalDeaths ?? 0)"
+                cell1.recoveryNums.text = "\(worldwide?.totalRecovered ?? 0)"
                 cell1.countryImage.image = UIImage(named: "Overall")
 
                 //Labels background customize:
                 cell1.caseBC.layer.cornerRadius = 7
                 cell1.deathBC.layer.cornerRadius = 7
                 cell1.recoveryBC.layer.cornerRadius = 7
-                
+
                 return cell1
-                
+
             } else {
-                
-                cell2.countryLabel.text = details[indexPath.row].details.country 
-                cell2.caseNums.text = details[indexPath.row].cases
-                cell2.deathNums.text = details[indexPath.row].deaths
-                cell2.recoveryNums.text = details[indexPath.row].recovered.replacingOccurrences(of: ",", with: "")
-                
+
+                cell2.countryLabel.text = details[indexPath.row].detail.name
+                cell2.caseNums.text = "\(details[indexPath.row].detail.cases)"
+                cell2.deathNums.text = "\(details[indexPath.row].detail.deaths)"
+                cell2.recoveryNums.text = "\(details[indexPath.row].detail.recovers)"
+
                 tableView.rowHeight = UITableView.automaticDimension
                 tableView.estimatedRowHeight = UITableView.automaticDimension
+                
             }
-            
+
             //Singular and plular words:
-            if details[indexPath.row].cases == "0" || details[indexPath.row].cases == "1" {
+            if details[indexPath.row].detail.cases == 0 || details[indexPath.row].detail.cases == 1 {
                 cell2.caseLabel.text = "Case"
             } else {
                 cell2.caseLabel.text = "Cases"
             }
-            
-            if details[indexPath.row].deaths == "0" || details[indexPath.row].deaths == "1" {
+
+            if details[indexPath.row].detail.cases == 0 || details[indexPath.row].detail.cases == 1 {
                 cell2.deathLabel.text = "Death"
             } else {
                 cell2.deathLabel.text = "Deaths"
             }
-            
-            if details[indexPath.row].recovered == "0" || details[indexPath.row].recovered == "1" {
+
+            if details[indexPath.row].detail.cases == 0 || details[indexPath.row].detail.cases == 1 {
                 cell2.recoverLabel.text = "Recover"
             } else {
                 cell2.recoverLabel.text = "Recovers"
             }
-            
+
 
             //Labels background customize:
             cell2.caseBC.layer.cornerRadius = 7
             cell2.deathBC.layer.cornerRadius = 7
             cell2.recoveryBC.layer.cornerRadius = 7
-            
+
             //Put the country flag currectly:
             let imageName = cell2.countryLabel.text
             cell2.countryImage.image = UIImage(named: imageName!)
-            
+
             return cell2
         }
 
         return cell2
     }
-    
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 
         if isSearching {
@@ -194,118 +196,106 @@ class ViewController: UITableViewController, UISearchBarDelegate {
             if section == 0 {
                 return 1
             } else {
-                
+
                 switch sorting {
                 case .mostCase:
-                    details.sort {$0.details.cases > $1.details.cases}
+                    details.sort {$0.detail.cases > $1.detail.cases}
                 case .leastCase:
-                    details.sort {$0.details.cases < $1.details.cases}
+                    details.sort {$0.detail.cases < $1.detail.cases}
                 case .mostDeath:
-                    details.sort {$0.details.deaths > $1.details.deaths}
+                    details.sort {$0.detail.deaths > $1.detail.deaths}
                 case .leastDeath:
-                    details.sort {$0.details.deaths < $1.details.deaths}
+                    details.sort {$0.detail.deaths < $1.detail.deaths}
                 case .mostRecover:
-                    details.sort {$0.details.recovered > $1.details.recovered}
+                    details.sort {$0.detail.recovers > $1.detail.recovers}
                 case .leastRecover:
-                    details.sort {$0.details.recovered < $1.details.recovered}
+                    details.sort {$0.detail.recovers < $1.detail.recovers}
                 default:
-                    details.sort()
+                    details.sort {$0.detail.name < $1.detail.name}
                 }
-                
+
                 return details.count
             }
         }
-            
+
     }
-    
+
     override func numberOfSections(in tableView: UITableView) -> Int {
         if isSearching {
             return 1
         } else {
             return 2
         }
-        
+
     }
-    
+//
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
-            
+
             //In case of not searching for anything:
-            let detail = details[indexPath.row]
-            let caseNumber = Int(details[indexPath.row].cases)
-            let deathNumber = Int(details[indexPath.row].deaths)
-            
+            let detail = details[indexPath.row].detail
+
             //In case of searching for something:
-            let detailFilter = searchFilter[indexPath.row]
-            let caseNumberFilter = Int(searchFilter[indexPath.row].cases)
-            let deathNumberFilter = Int(searchFilter[indexPath.row].deaths)
-            
+            let detailFilter = searchFilter[indexPath.row].detail
+
             if isSearching {
-                
-                vc.countryImg = detailFilter.details.country
-                vc.country = detailFilter.details.country
-                vc.caseNumbers = detailFilter.cases
-                vc.deathNumbers = detailFilter.deaths
-                vc.recoveredNumbers = detailFilter.recovered
-                vc.numberofAlives = caseNumberFilter! - deathNumberFilter!
-                
+
+                vc.countryImg = detailFilter.name
+                vc.country = detailFilter.name
+                vc.caseNumbers = "\(detailFilter.cases)"
+                vc.deathNumbers = "\(detailFilter.deaths)"
+                vc.recoveredNumbers = "\(detailFilter.recovers)"
+                vc.numberofAlives = detailFilter.cases - detailFilter.deaths
+
                  vc.lastupdate = "Last Update: \(date?.replacingMultipleOccurrences(using: (of: "T", with: " "), (of: "Z", with: " UTC +0")) ?? "Last Update: Not available.")"
-                
+
             } else {
                 if indexPath.section == 0 {
-                    
-                    let totalCases = details.map({$0.details.cases}).reduce(0, +)
-                    let totalDeaths = details.map({$0.details.deaths}).reduce(0, +)
-                    let totalRecovered = details.map({$0.details.recovered}).reduce(0, +)
-                    
+
                     vc.countryImg = "Overall"
                     vc.country = "Overall"
-                    vc.caseNumbers = "\(totalCases)"
-                    vc.deathNumbers = "\(totalDeaths)"
-                    vc.recoveredNumbers = "\(totalRecovered)"
-                    vc.numberofAlives = totalCases - totalDeaths
-                    
+                    vc.caseNumbers = "\(worldwide!.totalConfirmed)"
+                    vc.deathNumbers = "\(worldwide!.totalDeaths)"
+                    vc.recoveredNumbers = "\(worldwide!.totalRecovered)"
+                    vc.numberofAlives = worldwide!.totalConfirmed - worldwide!.totalDeaths
+
                     vc.lastupdate = "Last Update: \(date?.replacingMultipleOccurrences(using: (of: "T", with: " "), (of: "Z", with: " UTC +0")) ?? "Last Update: Not available.")"
-                    
+
                 } else {
-                    vc.countryImg = detail.details.country
-                    vc.country = detail.details.country
-                    vc.caseNumbers = detail.cases
-                    vc.deathNumbers = detail.deaths
-                    vc.recoveredNumbers = detail.recovered.replacingOccurrences(of: ",", with: "")
-                    vc.numberofAlives = caseNumber! - deathNumber!
-                    
+
+                    vc.countryImg = detail.name
+                    vc.country = detail.name
+                    vc.caseNumbers = "\(detail.cases)"
+                    vc.deathNumbers = "\(detail.deaths)"
+                    vc.recoveredNumbers = "\(detail.recovers)"
+                    vc.numberofAlives = detail.cases - detail.recovers
+
                     vc.lastupdate = "Last Update: \(date?.replacingMultipleOccurrences(using: (of: "T", with: " "), (of: "Z", with: " UTC +0")) ?? "Last Update: Not available.")"
-                    
+
                 }
             }
-            
+
             navigationController?.pushViewController(vc, animated: true)
         }
     }
-    
+
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        
+
         //Put the Last Update detail on the second section:
         if section == 1 {
             return "Last Update: \(date?.replacingMultipleOccurrences(using: (of: "T", with: " "), (of: "Z", with: " UTC +0")) ?? "Last Update: Not available.")"
         }
-        
+
         return ""
     }
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-       return UITableView.automaticDimension
-    }
-    
-    override func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
-
-        return UITableView.automaticDimension
+        return 120
     }
     
     //About button on navigation:
     @objc func infoButton() {
-        let ac = UIAlertController(title: "About", message: "This is free, open-sourced, online app for tracking COVID-19 outbreak cases based on countries. All data of this app has provided by 'https://interactive-static.scmp.com' and will be updated daily.\nCreated by Makwan BK.", preferredStyle: .alert)
+        let ac = UIAlertController(title: "About", message: "This is free, open-sourced, online app for tracking COVID-19 outbreak cases based on countries. All data of this app has provided by Microsoft's Bing and will be updated daily.\nCreated by Makwan BK.", preferredStyle: .alert)
         
         ac.addAction(UIAlertAction(title: "View Codes", style: .default, handler: { (action) in
             if let url = URL(string: "https://github.com/m1bki0n/CoronaTracker") {
@@ -388,18 +378,22 @@ class ViewController: UITableViewController, UISearchBarDelegate {
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         guard !searchText.isEmpty && searchText != " " && searchText != "  " else {searchFilter = details; return}
-        
+
         searchFilter = details.filter ({ user -> Bool in
-            return user.country.contains(searchText)
+            return user.displayName.contains(searchText)
         })
-        
+
         isSearching = true
         tableView.reloadData()
-        
+
     }
-    
+
     func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
         searchBar.endEditing(true)
+    }
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        textField.endEditing(true)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
